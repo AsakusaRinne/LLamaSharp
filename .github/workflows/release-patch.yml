@@ -49,4 +49,4 @@ jobs:
         path: './temp'
 
     - name: Push LLamaSharp packages to nuget.org
-      run: dotnet nuget push ./temp/LLamaSharp*.nupkg --source https://www.nuget.org -k ${{ secrets.LLAMA_SHARP_NUGET_KEY }} --skip-duplicate
+      run: dotnet nuget push ./temp/LLamaSharp*.nupkg --source https://www.myget.org/F/AsakusaRinne/api/v3/index.json -k ${{ secrets.LLAMA_SHARP_NUGET_KEY }} --skip-duplicate

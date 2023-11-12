@@ -71,6 +71,7 @@ cd ..
 # pack the main package
 dotnet pack ./LLama/LLamaSharp.csproj -c Release -o ./temp/ /p:PackageVersion=$updated_version /p:Version=$updated_version;
 dotnet pack ./LLama.SemanticKernel/LLamaSharp.SemanticKernel.csproj -c Release -o ./temp/ /p:PackageVersion=$updated_version /p:Version=$updated_version;
+dotnet pack ./LLama.KernelMemory/LLamaSharp.KernelMemory.csproj -c Release -o ./temp/ /p:PackageVersion=$updated_version /p:Version=$updated_version;
 
 # pack the backends
 cd temp
