@@ -8,7 +8,7 @@ namespace LLama.Examples.NewVersion
         {
             Console.Write("Please input your model path: ");
             var modelPath = Console.ReadLine();
-            var prompt = File.ReadAllText("Assets/chat-with-bob.txt").Trim();
+            var prompt = File.ReadAllText("Assets/chat-with-kunkun-chinese.txt", encoding: Encoding).Trim();
 
             var parameters = new ModelParams(modelPath)
             {
