@@ -1,4 +1,5 @@
 ﻿using LLama.Common;
+using System.Text;
 
 namespace LLama.Examples.NewVersion
 {
@@ -7,14 +8,17 @@ namespace LLama.Examples.NewVersion
         public static async Task Run()
         {
             Console.Write("Please input your model path: ");
-            var modelPath = Console.ReadLine();
-            var prompt = File.ReadAllText("Assets/chat-with-kunkun-chinese.txt", encoding: Encoding).Trim();
+            var modelPath = @"D:\development\llama\weights\thespis-13b-v0.5.Q8_0.gguf";
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+            var encoding = Encoding.GetEncoding("gb2312");
+            var prompt = File.ReadAllText("Assets/chat-with-kunkun-chinese.txt", encoding: encoding).Trim();
 
             var parameters = new ModelParams(modelPath)
             {
                 ContextSize = 1024,
                 Seed = 1337,
-                GpuLayerCount = 5
+                GpuLayerCount = 15, 
+                Encoding = encoding,
             };
             using var model = LLamaWeights.LoadFromFile(parameters);
             using var context = model.CreateContext(parameters);
