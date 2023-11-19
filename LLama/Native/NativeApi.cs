@@ -226,7 +226,7 @@ namespace LLama.Native
                 fixed (char* textPtr = text)
                 fixed (byte* arrayPtr = array)
                 {
-                    encoding.GetBytes(textPtr, text.Length, arrayPtr, array.Length);
+                    encoding.GetBytes(textPtr, text.Length, arrayPtr, byteCount);
                 }
 
                 // Add a zero byte to the end to terminate the string
@@ -235,7 +235,7 @@ namespace LLama.Native
                 // Do the actual tokenization
                 fixed (byte* arrayPtr = array)
                 fixed (llama_token* tokensPtr = tokens)
-                    return llama_tokenize(ctx.ModelHandle, arrayPtr, byteCount, tokensPtr, n_max_tokens, add_bos, special);
+                    return llama_tokenize(ctx.ModelHandle, arrayPtr, byteCount + 1, tokensPtr, n_max_tokens, add_bos, special);
             }
             finally
             {

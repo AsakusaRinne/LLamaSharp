@@ -154,13 +154,13 @@ namespace LLama
 
             History.Messages.Add(new ChatHistory.Message(AuthorRole.User, prompt));
 
-            if (_executor is InteractiveExecutor executor)
-            {
-                InteractiveExecutorState state = (InteractiveExecutorState)executor.GetStateData();
-                prompt = state.IsPromptRun
-                    ? HistoryTransform.HistoryToText(History)
-                    : prompt;
-            }
+            //if (_executor is InteractiveExecutor executor)
+            //{
+            //    InteractiveExecutorState state = (InteractiveExecutorState)executor.GetStateData();
+            //    prompt = state.IsPromptRun
+            //        ? HistoryTransform.HistoryToText(History)
+            //        : prompt;
+            //}
 
             StringBuilder sb = new();
 

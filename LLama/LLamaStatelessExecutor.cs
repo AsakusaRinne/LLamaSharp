@@ -98,7 +98,7 @@ namespace LLama
 
                 // Decode this token into text
                 decoder.Add(id);
-                var decoded = decoder.Read();
+                var decoded = decoder.Pop();
                 yield return decoded;
 
                 // Check if any of the antiprompts have been generated

@@ -70,7 +70,8 @@ namespace LLama
         /// </summary>
         protected float? MirostatMu { get; set; }
 
-        private StreamingTokenDecoder _decoder;
+        protected StreamingTokenDecoder _decoder;
+        protected AntipromptProcessor _antiprocessor;
 
         /// <summary>
         /// 
@@ -86,6 +87,7 @@ namespace LLama
             _n_session_consumed = 0;
             _last_n_tokens = new FixedSizeQueue<llama_token>(Context.ContextSize).FillWith(0);
             _decoder = new StreamingTokenDecoder(context);
+            _antiprocessor = new AntipromptProcessor();
         }
 
         /// <summary>

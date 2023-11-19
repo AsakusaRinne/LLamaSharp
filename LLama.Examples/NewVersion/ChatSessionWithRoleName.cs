@@ -5,20 +5,29 @@ namespace LLama.Examples.NewVersion
 {
     public class ChatSessionWithRoleName
     {
+        private static string GB2312ToUtf8(string input)
+        {
+            var gb2312 = Encoding.GetEncoding("gb2312");
+            byte[] bytes = gb2312.GetBytes(input);
+            var convertedBytes = Encoding.Convert(gb2312, Encoding.UTF8, bytes);
+            return Encoding.UTF8.GetString(convertedBytes);
+        }
         public static async Task Run()
         {
             Console.Write("Please input your model path: ");
-            var modelPath = @"D:\development\llama\weights\thespis-13b-v0.5.Q8_0.gguf";
+            var modelPath = @"D:\development\llama\weights\Baichuan2-13B-Chat-ggml-model-q4_0.gguf";
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
             var encoding = Encoding.GetEncoding("gb2312");
             var prompt = File.ReadAllText("Assets/chat-with-kunkun-chinese.txt", encoding: encoding).Trim();
+
+            prompt = GB2312ToUtf8(prompt);
 
             var parameters = new ModelParams(modelPath)
             {
                 ContextSize = 1024,
                 Seed = 1337,
                 GpuLayerCount = 15, 
-                Encoding = encoding,
+                Encoding = Encoding.UTF8,
             };
             using var model = LLamaWeights.LoadFromFile(parameters);
             using var context = model.CreateContext(parameters);
@@ -34,7 +43,7 @@ namespace LLama.Examples.NewVersion
             Console.Write(prompt);
             while (true)
             {
-                await foreach (var text in session.ChatAsync(prompt, new InferenceParams() { Temperature = 0.6f, AntiPrompts = new List<string> { "User:" } }))
+                await foreach (var text in session.ChatAsync(prompt, new InferenceParams() { Temperature = 0.6f, AntiPrompts = new List<string> { "用户：" } }))
                 {
                     Console.Write(text);
                 }
