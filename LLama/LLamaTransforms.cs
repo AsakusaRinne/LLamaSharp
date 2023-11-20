@@ -55,7 +55,7 @@ namespace LLama
                 {
                     if (message.AuthorRole == AuthorRole.User)
                     {
-                        sb.AppendLine($"{_userName}: {message.Content}");
+                        sb.AppendLine($"{_userName}：{message.Content}");
                     }
                     else if (message.AuthorRole == AuthorRole.System)
                     {

@@ -110,7 +110,7 @@ namespace LLama.Native
                 fixed (byte* destPtr = dest)
                 {
                     var length = NativeApi.llama_token_to_piece(this, llama_token, destPtr, dest.Length);
-                    return Math.Abs(length);
+                    return length;
                 }
             }
         }
@@ -133,7 +133,7 @@ namespace LLama.Native
             foreach (var token in tokens)
                 decoder.Add(token);
 
-            var str = decoder.Read();
+            var str = decoder.Pop();
 
             if (str.Length < dest.Length)
             {

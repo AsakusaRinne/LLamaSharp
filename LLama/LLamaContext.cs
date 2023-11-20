@@ -94,6 +94,15 @@ namespace LLama
         /// <returns></returns>
         public llama_token[] Tokenize(string text, bool addBos = true, bool special = false)
         {
+            //var res = CustomizedTokenizer.Tokenize(text);
+            //if (addBos)
+            //{
+            //    return res.Concat(new llama_token[] { NativeApi.llama_token_bos(this.NativeHandle.ModelHandle) }).ToArray();
+            //}
+            //else
+            //{
+            //    return res;
+            //}
             return NativeHandle.Tokenize(text, addBos, special, Encoding);
         }
 

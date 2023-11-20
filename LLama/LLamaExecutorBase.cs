@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Text;
 using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
@@ -70,7 +71,10 @@ namespace LLama
         /// </summary>
         protected float? MirostatMu { get; set; }
 
-        private StreamingTokenDecoder _decoder;
+        /// <inheritdoc />
+        protected StreamingTokenDecoder _decoder;
+        /// <inheritdoc />
+        protected AntipromptProcessor _antiprocessor;
 
         /// <summary>
         /// 
@@ -86,6 +90,7 @@ namespace LLama
             _n_session_consumed = 0;
             _last_n_tokens = new FixedSizeQueue<llama_token>(Context.ContextSize);
             _decoder = new StreamingTokenDecoder(context);
+            _antiprocessor = new AntipromptProcessor();
         }
 
         /// <summary>
@@ -264,6 +269,27 @@ namespace LLama
         /// <param name="filename"></param>
         public abstract Task LoadState(string filename);
 
+        private unsafe string id2str(int embed)
+        {
+            var type = NativeApi.llama_token_get_type(this._decoder._weights, embed);
+            if(type != 1)
+            {
+                Console.Write("");
+            }
+            byte[] bbb = new byte[32];
+            Span<byte> buffer = new Span<byte>(bbb);
+            int length;
+            fixed (byte* ptr = buffer)
+                length = NativeApi.llama_token_to_piece(this._decoder._weights, embed, ptr, 32);
+            byte* temp = NativeApi.llama_token_get_text(this._decoder._weights, embed);
+            List<byte> barray = new();
+            while (*temp != 0)
+            {
+                barray.Add(*temp++);
+            }
+            var temp_str = Encoding.UTF8.GetString(barray.ToArray());
+            return temp_str;
+        }
 
         /// <summary>
         /// Execute the inference.
@@ -299,6 +325,11 @@ namespace LLama
                 if (args.ReturnValue)
                 {
                     _decoder.AddRange(_embeds);
+                    string converted = "";
+                    foreach (var embed in _embeds)
+                    {
+                        converted += id2str(embed);
+                    }
                     yield return _decoder.Read();
                 }
 

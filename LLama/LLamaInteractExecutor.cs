@@ -133,13 +133,29 @@ namespace LLama
         protected override async Task<(bool, IReadOnlyList<string>)> PostProcess(IInferenceParams inferenceParams, InferStateArgs args)
         {
             if (_embed_inps.Count <= _consumedTokensCount)
-            {
-                if (_last_n_tokens.TokensEndsWithAnyString(args.Antiprompts, Context.NativeHandle.ModelHandle, Context.Encoding))
-                    args.WaitForInput = true;
+                if (args.ReturnValue)
+                {
+                    _antiprocessor.SetAntiprompts(inferenceParams.AntiPrompts);
+                    var lastStr = _decoder.Pop();
+                    if (lastStr == "用户")
+                    {
 
-                if (_pastTokensCount > 0 && args.WaitForInput)
-                    return (true, Array.Empty<string>());
-            }
+                    }
+                    if (_embed_inps.Count <= _consumedTokensCount)
+                    {
+                        if (_antiprocessor.Add(lastStr))
+                        {
+                            args.WaitForInput = true;
+                        }
+
+                        if (_pastTokensCount > 0 && args.WaitForInput)
+                            return (true, Array.Empty<string>());
+                    }
+                }
+                else
+                {
+                    // if not return value (means prompt run), then we ignore the antiprompt process 
+                }
 
             if (_embeds.Count > 0 && _embeds.Last() == NativeApi.llama_token_eos(Context.NativeHandle.ModelHandle))
             {

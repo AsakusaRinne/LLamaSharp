@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Buffers;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -8,6 +9,17 @@ using System.Text;
 namespace LLama.Native
 {
     using llama_token = Int32;
+
+    public enum LLamaTokenType
+    {
+        LLAMA_TOKEN_TYPE_UNDEFINED = 0,
+        LLAMA_TOKEN_TYPE_NORMAL = 1,
+        LLAMA_TOKEN_TYPE_UNKNOWN = 2,
+        LLAMA_TOKEN_TYPE_CONTROL = 3,
+        LLAMA_TOKEN_TYPE_USER_DEFINED = 4,
+        LLAMA_TOKEN_TYPE_UNUSED = 5,
+        LLAMA_TOKEN_TYPE_BYTE = 6,
+    }
 
     /// <summary>
     /// Callback from llama.cpp with log messages
@@ -215,7 +227,7 @@ namespace LLama.Native
         /// <returns>Returns the number of tokens on success, no more than n_max_tokens.
         /// Returns a negative number on failure - the number of tokens that would have been returned
         /// </returns>
-        public static int llama_tokenize(SafeLLamaContextHandle ctx, string text, Encoding encoding, llama_token[] tokens, int n_max_tokens, bool add_bos, bool special)
+        public static unsafe int llama_tokenize(SafeLLamaContextHandle ctx, string text, Encoding encoding, llama_token[] tokens, int n_max_tokens, bool add_bos, bool special)
         {
             // Calculate number of bytes in text and borrow an array that large (+1 for nul byte)
             var byteCount = encoding.GetByteCount(text);
@@ -226,7 +238,7 @@ namespace LLama.Native
                 fixed (char* textPtr = text)
                 fixed (byte* arrayPtr = array)
                 {
-                    encoding.GetBytes(textPtr, text.Length, arrayPtr, array.Length);
+                    encoding.GetBytes(textPtr, text.Length, arrayPtr, byteCount);
                 }
 
                 // Add a zero byte to the end to terminate the string
@@ -235,13 +247,22 @@ namespace LLama.Native
                 // Do the actual tokenization
                 fixed (byte* arrayPtr = array)
                 fixed (llama_token* tokensPtr = tokens)
-                    return llama_tokenize(ctx.ModelHandle, arrayPtr, byteCount, tokensPtr, n_max_tokens, add_bos, special);
+                {
+                    var res = llama_tokenize(ctx.ModelHandle, arrayPtr, byteCount + 1, tokensPtr, n_max_tokens, add_bos, special);
+                    return res;
+                }
             }
             finally
             {
                 ArrayPool<byte>.Shared.Return(array);
             }
         }
+
+        [DllImport(libraryName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int llama_token_get_type(SafeLlamaModelHandle model, llama_token token);
+
+        [DllImport(libraryName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern byte* llama_token_get_text(SafeLlamaModelHandle model, llama_token token);
 
         /// <summary>
         /// Get the size of the context window for the model for this context

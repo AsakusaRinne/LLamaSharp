@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Text;
 using LLama.Extensions;
 using LLama.Native;
+using System.Linq;
 
 namespace LLama
 {
@@ -13,10 +14,11 @@ namespace LLama
     /// </summary>
     public sealed class StreamingTokenDecoder
     {
-        private readonly SafeLlamaModelHandle _weights;
-        private readonly Decoder _decoder;
+        internal readonly SafeLlamaModelHandle _weights;
+        private Decoder _decoder;
 
         private readonly List<char> _characters = new();
+        private List<byte> _buffer = new();
 
         /// <summary>
         /// The number of decoded characters waiting to be read
@@ -71,22 +73,39 @@ namespace LLama
         /// <param name="token"></param>
         public void Add(int token)
         {
+            //_characters.AddRange(CustomizedTokenizer.DeTokenize(token).ToCharArray());
+            //return;
             var charsArr = ArrayPool<char>.Shared.Rent(16);
             var bytesArr = ArrayPool<byte>.Shared.Rent(16);
             try
             {
                 // Convert this token into bytes
                 var bytesAvailable = TokenToBytes(ref bytesArr, token, _weights).Length;
+                _buffer.AddRange(bytesArr.Take(bytesAvailable));
+                var arrayToDecode = _buffer.ToArray();
+                bytesAvailable = arrayToDecode.Length;
 
                 // Convert those bytes into characters
                 var bytesOffset = 0;
                 var completed = false;
+
+                if (bytesAvailable > 0 && bytesArr[0] == NativeApi.llama_token_bos(_weights))
+                {
+                    bytesOffset = 1;
+                    bytesAvailable -= 1;
+                }
+
                 while (!completed)
                 {
+                    var cnt = _decoder.GetCharCount(arrayToDecode, bytesOffset, bytesAvailable);
+                    if (cnt == 0)
+                    {
+                        break;
+                    }
                     // Decode some of the bytes into the temp char buffer. Keep doing this
                     // until all bytes have been consumed
                     _decoder.Convert(
-                        bytesArr, bytesOffset, bytesAvailable,
+                        arrayToDecode, bytesOffset, bytesAvailable,
                         charsArr, 0, charsArr.Length,
                         false,
                         out var bytesUsed, out var charsUsed, out completed
@@ -97,6 +116,8 @@ namespace LLama
                     // Add the decoded characters to the output buffer
                     _characters.AddSpan(charsArr.AsSpan(0, charsUsed));
                 }
+                _buffer.Clear();
+                _buffer.AddRange(bytesArr.Skip(bytesOffset).Take(bytesAvailable));
             }
             finally
             {
@@ -143,17 +164,30 @@ namespace LLama
         /// Read all decoded characters and clear the buffer
         /// </summary>
         /// <param name="dest"></param>
-        public void Read(List<char> dest)
+        public void Pop(List<char> dest)
         {
             dest.AddRange(_characters);
             _characters.Clear();
         }
 
         /// <summary>
-        /// Read all decoded characters as a string and clear the buffer
+        /// Read all decoded characters as a string but doesn't clear the buffer
         /// </summary>
         /// <returns></returns>
         public string Read()
+        {
+            if (_characters.Count == 0)
+                return "";
+
+            var str = string.Join("", _characters);
+            return str;
+        }
+
+        /// <summary>
+        /// Read all decoded characters as a string and clear the buffer
+        /// </summary>
+        /// <returns></returns>
+        public string Pop()
         {
             if (_characters.Count == 0)
                 return "";
