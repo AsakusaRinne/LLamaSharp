@@ -27,12 +27,11 @@ public class ChatChineseGB2312
 
         var parameters = new ModelParams(modelPath)
         {
-            ContextSize = 1024,
             Seed = 1337,
             GpuLayerCount = 5,
             Encoding = Encoding.UTF8
         };
-        using var model = LLamaWeights.LoadFromFile(parameters);
+        using var model = await LLamaWeights.LoadFromFileAsync(parameters);
         using var context = model.CreateContext(parameters);
         var executor = new InteractiveExecutor(context);
 

@@ -12,10 +12,11 @@ namespace LLama.Unittest
 
         public GrammarTest()
         {
-            _params = new ModelParams(Constants.ModelPath)
+            _params = new ModelParams(Constants.GenerativeModelPath)
             {
                 ContextSize = 2048,
                 Seed = 92,
+                GpuLayerCount = Constants.CIGpuLayerCount,                
             };
             _model = LLamaWeights.LoadFromFile(_params);
         }

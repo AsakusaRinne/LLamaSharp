@@ -9,15 +9,14 @@ namespace LLama.Examples.Examples
         {
             string modelPath = UserSettings.GetModelPath();
 
-            var prompt = File.ReadAllText("Assets/dan.txt").Trim();
+            var prompt = (await File.ReadAllTextAsync("Assets/dan.txt")).Trim();
 
             var parameters = new ModelParams(modelPath)
             {
-                ContextSize = 1024,
                 Seed = 1337,
                 GpuLayerCount = 5
             };
-            using var model = LLamaWeights.LoadFromFile(parameters);
+            using var model = await LLamaWeights.LoadFromFileAsync(parameters);
             using var context = model.CreateContext(parameters);
             var executor = new InstructExecutor(context);
 

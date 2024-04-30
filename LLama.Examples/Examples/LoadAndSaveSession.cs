@@ -12,11 +12,10 @@ namespace LLama.Examples.Examples
 
             var parameters = new ModelParams(modelPath)
             {
-                ContextSize = 1024,
                 Seed = 1337,
                 GpuLayerCount = 5
             };
-            using var model = LLamaWeights.LoadFromFile(parameters);
+            using var model = await LLamaWeights.LoadFromFileAsync(parameters);
             using var context = model.CreateContext(parameters);
             var ex = new InteractiveExecutor(context);
 

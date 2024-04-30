@@ -12,6 +12,7 @@ using LLama.Exceptions;
 using LLama.Extensions;
 using Microsoft.Extensions.Logging;
 
+
 namespace LLama
 {
     /// <summary>
@@ -20,7 +21,6 @@ namespace LLama
     public class InteractiveExecutor : StatefulExecutorBase
     {
         private bool _is_prompt_run = true;
-        private readonly LLamaToken _llama_token_newline;
         
         // LLava
         private int _EmbedImagePosition = -1;
@@ -35,13 +35,11 @@ namespace LLama
         public InteractiveExecutor(LLamaContext context, ILogger? logger = null)
             : base(context, logger)
         {
-            _llama_token_newline = NativeApi.llama_token_nl(Context.NativeHandle.ModelHandle);
         }
         
         public InteractiveExecutor(LLamaContext context, LLavaWeights clipModel, ILogger? logger = null)
             : base(context, clipModel, logger)
         {
-            _llama_token_newline = NativeApi.llama_token_nl(Context.NativeHandle.ModelHandle);
         }        
 
         /// <inheritdoc />
@@ -121,7 +119,7 @@ namespace LLama
                 // When running the first input (prompt) in interactive mode, we should specially process it.
                 if (!this.IsMultiModal)
                 {
-                    _embed_inps = Context.Tokenize(text, true).ToList();
+                    _embed_inps = Context.Tokenize(text, true, true).ToList();
                 }
                 else
                 {
@@ -135,41 +133,59 @@ namespace LLama
                     text += "\n";
                 }
 
-                var line_inp = Context.Tokenize(text, false);
-                _embed_inps.AddRange(line_inp);
-                args.RemainedTokens -= line_inp.Length;
+                if (!this.IsMultiModal)
+                {
+                    var line_inp = Context.Tokenize(text, false, true);
+                    _embed_inps.AddRange(line_inp);
+                    args.RemainedTokens -= line_inp.Length;
+                }
+                else
+                {
+                    PreprocessLlava(text, args, false);
+                }
             }
 
             return Task.CompletedTask;
         }
 
+        /// <inheritdoc />
         private Task PreprocessLlava(string text, InferStateArgs args, bool addBos = true )
         {
             int usedTokens = 0;
+            
             // If the prompt contains the tag <image> extract this.
             _imageInPrompt = text.Contains("<image>");
-            if (_imageInPrompt)
+            if (_imageInPrompt && IsMultiModal )
             {
-                foreach (var image in ImagePaths)
+                foreach (var image in Images)
                 {
-                    _imageEmbedHandles.Add(SafeLlavaImageEmbedHandle.CreateFromFileName( ClipModel.NativeHandle, Context, image ) );
+                    _imageEmbedHandles.Add(SafeLlavaImageEmbedHandle.CreateFromMemory(ClipModel.NativeHandle, Context, image));
                 }
-                        
+
                 int imageIndex = text.IndexOf("<image>");
                 // Tokenize segment 1 (before <image> tag)
                 string preImagePrompt = text.Substring(0, imageIndex);
-                var segment1 = Context.Tokenize(preImagePrompt, addBos );
+                var segment1 = Context.Tokenize(preImagePrompt, addBos, true);
                 // Remember the position to add the image embeddings
                 _EmbedImagePosition = segment1.Length;
                 string postImagePrompt = text.Substring(imageIndex + 7);
-                var segment2 = Context.Tokenize(postImagePrompt, false);
+                var segment2 = Context.Tokenize(postImagePrompt, false, true);
                 _embed_inps.AddRange(segment1);
                 _embed_inps.AddRange(segment2);
                 usedTokens += (segment1.Length + segment2.Length);
             }
             else
             {
-                _embed_inps = Context.Tokenize(text, true).ToList();
+                if (addBos)
+                {
+                    _embed_inps = Context.Tokenize(text, true, true).ToList();
+                }
+                else
+                {
+                    var line_inp = Context.Tokenize(text, false, true);
+                    _embed_inps.AddRange(line_inp);
+                    args.RemainedTokens -= line_inp.Length;                    
+                }
             }
             return Task.CompletedTask;
         }
@@ -191,7 +207,7 @@ namespace LLama
                     return (true, Array.Empty<string>());
             }
 
-            if (_embeds.Count > 0 && _embeds.Last() == NativeApi.llama_token_eos(Context.NativeHandle.ModelHandle))
+            if (_embeds.Count > 0 && _embeds.Last() == Context.NativeHandle.ModelHandle.Tokens.EOS)
             {
                 return (true, new[] { " [end of text]\n" });
             }
@@ -238,6 +254,7 @@ namespace LLama
 
                     _EmbedImagePosition = -1;
                     _imageEmbedHandles.Clear();
+                    Images.Clear();
                 }
                 else
                 {
@@ -288,9 +305,9 @@ namespace LLama
 
                 _last_n_tokens.Enqueue(id);
 
-                if (id == NativeApi.llama_token_eos(Context.NativeHandle.ModelHandle))
+                if (id == Context.NativeHandle.ModelHandle.Tokens.EOS)
                 {
-                    id = _llama_token_newline;
+                    id = Context.NativeHandle.ModelHandle.Tokens.Newline!.Value;
                     if (args.Antiprompts is not null && args.Antiprompts.Count > 0)
                     {
                         var first_antiprompt = Context.Tokenize(args.Antiprompts[0], false);

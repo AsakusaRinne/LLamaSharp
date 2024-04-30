@@ -26,10 +26,16 @@ namespace LLama
         
         // LLava Section
         public bool IsMultiModal => false;
+
+        /// <inheritdoc />
         public bool MultiModalProject { get;  }
-        public LLavaWeights? ClipModel { get;  }        
-        public List<string> ImagePaths { get; set; } 
-        
+
+        /// <inheritdoc />
+        public LLavaWeights? ClipModel { get;  }
+
+        /// <inheritdoc />
+        public List<byte[]> Images { get; set; }
+
         /// <summary>
         /// The context used by the executor when running the inference.
         /// </summary>
@@ -43,7 +49,7 @@ namespace LLama
         /// <param name="logger"></param>
         public StatelessExecutor(LLamaWeights weights, IContextParams @params, ILogger? logger = null)
         {
-            ImagePaths = new List<string>();
+            Images = new List<byte[]>();
             _weights = weights;
             _params = @params;
             _logger = logger;
@@ -84,7 +90,7 @@ namespace LLama
                 lastTokens.Add(0);
 
             // Tokenize the prompt
-            var tokens = Context.Tokenize(prompt).ToList();
+            var tokens = Context.Tokenize(prompt, special: true).ToList();
             lastTokens.AddRange(tokens);
 
             // Evaluate the prompt, in chunks smaller than the max batch size
@@ -118,7 +124,7 @@ namespace LLama
                 }
 
                 // Check if this is the EOS token
-                if (id == _weights.EndOfSentenceToken)
+                if (id == _weights.Tokens.EOS)
                     break;
 
                 // Decode this token into text

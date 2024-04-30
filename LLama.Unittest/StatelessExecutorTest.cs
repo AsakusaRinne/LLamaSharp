@@ -15,11 +15,12 @@ namespace LLama.Unittest
         public StatelessExecutorTest(ITestOutputHelper testOutputHelper)
         {
             _testOutputHelper = testOutputHelper;
-            _params = new ModelParams(Constants.ModelPath)
+            _params = new ModelParams(Constants.GenerativeModelPath)
             {
                 ContextSize = 60,
                 Seed = 1754,
                 BatchSize = 2,
+                GpuLayerCount = Constants.CIGpuLayerCount,                
             };
             _weights = LLamaWeights.LoadFromFile(_params);
         }

@@ -38,7 +38,7 @@ namespace LLama.Native
         // as NET Framework 4.8 does not play nice with the LlamaProgressCallback type
         public IntPtr progress_callback;
 #else
-        public LlamaProgressCallback progress_callback;
+        public LlamaProgressCallback? progress_callback;
 #endif
 
         /// <summary>
@@ -80,5 +80,17 @@ namespace LLama.Native
             set => _use_mlock = Convert.ToSByte(value);
         }
         private sbyte _use_mlock;
+
+        /// <summary>
+        /// Create a LLamaModelParams with default values
+        /// </summary>
+        /// <returns></returns>
+        public static LLamaModelParams Default()
+        {
+            return llama_model_default_params();
+
+            [DllImport(NativeApi.libraryName, CallingConvention = CallingConvention.Cdecl)]
+            static extern LLamaModelParams llama_model_default_params();
+        }
     }
 }

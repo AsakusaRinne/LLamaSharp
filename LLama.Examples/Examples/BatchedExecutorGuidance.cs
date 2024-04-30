@@ -19,7 +19,7 @@ public class BatchedExecutorGuidance
         string modelPath = UserSettings.GetModelPath();
 
         var parameters = new ModelParams(modelPath);
-        using var model = LLamaWeights.LoadFromFile(parameters);
+        using var model = await LLamaWeights.LoadFromFileAsync(parameters);
 
         var positivePrompt = AnsiConsole.Ask("Positive Prompt (or ENTER for default):", "My favourite colour is").Trim();
         var negativePrompt = AnsiConsole.Ask("Negative Prompt (or ENTER for default):", "I hate the colour red. My favourite colour is").Trim();
@@ -79,7 +79,7 @@ public class BatchedExecutorGuidance
                     guidance.Prompt(g);
 
                     // Early exit if we reach the natural end of the guided sentence
-                    if (g == model.EndOfSentenceToken)
+                    if (g == model.Tokens.EOS)
                         break;
 
                     // Update progress bar
