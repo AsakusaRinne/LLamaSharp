@@ -7,11 +7,11 @@ using System.Text;
 namespace LLama.Experimental.Core
 {
     // TODO: This is only the most simple implementation to run the test now. We should replace it in the future.
-    public class SequenceLengthStoopingCriteria: IStoppingCriteria
+    public class SequenceLengthStopingCriteria: IStoppingCriteria
     {
         private int _maxSequenceLength;
 
-        public SequenceLengthStoopingCriteria(int maxSequenceLength)
+        public SequenceLengthStopingCriteria(int maxSequenceLength)
         {
             _maxSequenceLength = maxSequenceLength;
         }
